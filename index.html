@@ -22,23 +22,25 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4enJocnlpeXd0em1vcnlocWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5Mzg3OTAsImV4cCI6MjA2NTUxNDc5MH0.sq_u2Lq3_kjo0TzVGUINmv97fYGJmLWCZnXzh0pHcHc'
       );
 
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      let currentUserId = null;
+
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (!session) {
-          supabase.auth.signInWithOAuth({ provider: 'github' });
+          await supabase.auth.signInWithOAuth({ provider: 'github' });
         } else {
-          loadDashboard(session.user.id);
+          currentUserId = session.user.id; // ✅ uuid garantili
+          loadDashboard();
         }
       });
 
       async function startMining() {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (!currentUserId) {
           document.getElementById("status").innerText = "⛔ Giriş yapılmadan mining yapılamaz.";
           return;
         }
 
         const { error } = await supabase.from("Mining_Result").insert({
-          user_id: user.id,
+          user_id: currentUserId,
           earned_ngold: 25,
           platform: "web"
         });
@@ -47,17 +49,15 @@
           document.getElementById("status").innerText = "❌ Hata: " + error.message;
         } else {
           document.getElementById("status").innerText = "✅ Tebrikler, 25 NGOLD kazandınız!";
-          await loadDashboard(user.id); // ✅ Yeni kazancı göster
+          loadDashboard(); // 🟢 Güncelle
         }
       }
 
-      document.getElementById("miningButton").addEventListener("click", startMining);
-
-      async function loadDashboard(userId) {
+      async function loadDashboard() {
         const { data, error } = await supabase
           .from("Mining_Result")
           .select("*")
-          .eq("user_id", userId);
+          .eq("user_id", currentUserId);
 
         if (error) {
           document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
@@ -72,6 +72,8 @@
         document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
         document.getElementById("dashboard").style.display = "block";
       }
+
+      document.getElementById("miningButton").addEventListener("click", startMining);
     </script>
   </body>
 </html>
