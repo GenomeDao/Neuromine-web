@@ -53,26 +53,47 @@
 
       // Start Mining Fonksiyonu
       async function startMining() {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) {
-          document.getElementById("status").innerText = "⛔ Giriş yapılmadan mining yapılamaz.";
-          return;
-        }
+  const { data: { user } } = await supabase.auth.getUser();
 
-        const { error } = await supabase.from("Mining_Result").insert({
-          user_id: user.id,
-          earned_ngold: 25,
-          platform: "web",
-          created_at: new Date().toISOString() // zorunluysa
-        });
+  if (!user) {
+    document.getElementById("status").innerText = "⛔ Giriş yapılmadan mining yapılamaz.";
+    return;
+  }
 
-        if (error) {
-          document.getElementById("status").innerText = "❌ Hata: " + error.message;
-        } else {
-          document.getElementById("status").innerText = "✅ Tebrikler, 25 NGOLD kazandınız!";
-          loadDashboard(user.id); // Dashboard’u güncelle
-        }
-      }
+  // 🔍 Günlük kontrol - kullanıcı bugün kazım yapmış mı?
+  const today = new Date().toISOString().split("T")[0]; // "2025-06-15"
+  const { data: existing, error: queryError } = await supabase
+    .from("Mining_Result")
+    .select("id")
+    .eq("user_id", user.id)
+    .gte("created_at", `${today}T00:00:00`)
+    .lte("created_at", `${today}T23:59:59`);
+
+  if (queryError) {
+    document.getElementById("status").innerText = "❌ Hata: " + queryError.message;
+    return;
+  }
+
+  if (existing.length > 0) {
+    document.getElementById("status").innerText = "⚠️ Bugün zaten mining yaptınız.";
+    return;
+  }
+
+  // ⛏ Kazım işlemi
+  const { error } = await supabase.from("Mining_Result").insert({
+    user_id: user.id,
+    earned_ngold: 25,
+    platform: "web"
+  });
+
+  if (error) {
+    document.getElementById("status").innerText = "❌ Hata: " + error.message;
+  } else {
+    document.getElementById("status").innerText = "✅ Tebrikler, 25 NGOLD kazandınız!";
+    loadDashboard(user.id); // Dashboard'u güncelle
+  }
+}
+
 
       document.getElementById("miningButton").addEventListener("click", startMining);
 
