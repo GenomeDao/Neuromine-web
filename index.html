@@ -65,12 +65,13 @@
           return;
         }
 
-        const totalEarned = data.reduce((sum, row) => sum + (row.earned_ngold || 0), 0);
-        const totalMined = data.length;
+      	const totalEarned = data.reduce((sum, row) => sum + parseInt(row.earned_ngold || 0), 0);
+	const totalMined = data.length;
 
-        document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
-        document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
-        document.getElementById("dashboard").style.display = "block";
+      	document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
+	document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
+	document.getElementById("dashboard").style.display = "block";
+
       }
 
       document.getElementById("miningButton").addEventListener("click", startMining);
