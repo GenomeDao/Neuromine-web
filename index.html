@@ -1,80 +1,98 @@
-<script>
-  const supabase = window.supabase.createClient(
-    'https://hxzrhryiywtzmoryhqbg.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-  );
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NeuroMine</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body style="text-align: center; margin-top: 60px; font-family: Arial;">
+    <h2>NeuroMine Web Mining</h2>
+    <button id="miningButton">⛏ Mining’e Başla</button>
+    <p id="status">Durum bekleniyor...</p>
 
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (!session) {
-      supabase.auth.signInWithOAuth({ provider: 'github' });
-    } else {
-      loadDashboard(session.user.id);
-    }
-  });
+    <div id="dashboard" style="margin-top: 30px; display: none;">
+      <h3>📊 Kazanç Paneli</h3>
+      <p id="totalEarned">Toplam Kazanç: yükleniyor...</p>
+      <p id="totalMined">Toplam Mining Sayısı: yükleniyor...</p>
+    </div>
 
-  async function startMining() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      document.getElementById("status").innerText = "⛔ Giriş yapılmadan mining yapılamaz.";
-      return;
-    }
+    <script>
+      const supabase = window.supabase.createClient(
+        'https://hxzrhryiywtzmoryhqbg.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4enJocnlpeXd0em1vcnlocWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5Mzg3OTAsImV4cCI6MjA2NTUxNDc5MH0.sq_u2Lq3_kjo0TzVGUINmv97fYGJmLWCZnXzh0pHcHc'
+      );
 
-    // ✅ Aynı gün içinde mining yapıldı mı kontrolü
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isoToday = today.toISOString();
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          supabase.auth.signInWithOAuth({ provider: 'github' });
+        } else {
+          loadDashboard(session.user.id);
+        }
+      });
 
-    const { data: previous, error: fetchError } = await supabase
-      .from("Mining_Result")
-      .select("*")
-      .eq("user_id", user.id)
-      .gte("created_at", isoToday);
+      document.getElementById("miningButton").addEventListener("click", startMining);
 
-    if (fetchError) {
-      document.getElementById("status").innerText = "❌ Veri kontrol hatası.";
-      console.error(fetchError);
-      return;
-    }
+      async function startMining() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          document.getElementById("status").innerText = "⛔ Giriş yapılmadan mining yapılamaz.";
+          return;
+        }
 
-    if (previous.length > 0) {
-      document.getElementById("status").innerText = "⚠️ Bugün zaten mining yaptınız.";
-      return;
-    }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isoToday = today.toISOString();
 
-    // ⛏ Kazım işlemi
-    const { error } = await supabase.from("Mining_Result").insert({
-      user_id: user.id,
-      earned_ngold: 25,
-      platform: "web"
-    });
+        const { data: previous, error: fetchError } = await supabase
+          .from("Mining_Result")
+          .select("*")
+          .eq("user_id", user.id)
+          .gte("created_at", isoToday);
 
-    if (error) {
-      document.getElementById("status").innerText = "❌ Hata: " + error.message;
-    } else {
-      document.getElementById("status").innerText = "✅ Tebrikler, 25 NGOLD kazandınız!";
-      loadDashboard(user.id); // 📊 Güncelle
-    }
-  }
+        if (fetchError) {
+          document.getElementById("status").innerText = "❌ Veri kontrol hatası.";
+          console.error(fetchError);
+          return;
+        }
 
-  document.getElementById("miningButton").addEventListener("click", startMining);
+        if (previous.length > 0) {
+          document.getElementById("status").innerText = "⚠️ Bugün zaten mining yaptınız.";
+          return;
+        }
 
-  async function loadDashboard(userId) {
-    const { data, error } = await supabase
-      .from("Mining_Result")
-      .select("*")
-      .eq("user_id", userId);
+        const { error } = await supabase.from("Mining_Result").insert({
+          user_id: user.id,
+          earned_ngold: 25,
+          platform: "web"
+        });
 
-    if (error) {
-      document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
-      console.error(error);
-      return;
-    }
+        if (error) {
+          document.getElementById("status").innerText = "❌ Hata: " + error.message;
+        } else {
+          document.getElementById("status").innerText = "✅ Tebrikler, 25 NGOLD kazandınız!";
+          loadDashboard(user.id);
+        }
+      }
 
-    const totalEarned = data.reduce((sum, row) => sum + (row.earned_ngold || 0), 0);
-    const totalMined = data.length;
+      async function loadDashboard(userId) {
+        const { data, error } = await supabase
+          .from("Mining_Result")
+          .select("*")
+          .eq("user_id", userId);
 
-    document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
-    document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
-    document.getElementById("dashboard").style.display = "block";
-  }
-</script>
+        if (error) {
+          document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
+          console.error(error);
+          return;
+        }
+
+        const totalEarned = data.reduce((sum, row) => sum + (row.earned_ngold || 0), 0);
+        const totalMined = data.length;
+
+        document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
+        document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
+        document.getElementById("dashboard").style.display = "block";
+      }
+    </script>
+  </body>
+</html>
