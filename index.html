@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>NeuroMine Web Mining</title>
 </head>
 <body style="font-family: Arial; text-align: center; margin-top: 50px;">
@@ -9,21 +9,24 @@
   <button id="miningButton">⛏ Mining’e Başla</button>
   <p id="status">Durum bekleniyor...</p>
 
-  <!-- Supabase kütüphanesini yükle -->
+  <!-- 1. Supabase JS Kütüphanesini yükle -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- 2. Supabase Client Ayarı -->
   <script>
-    const supabase = window.supabase.createClient(
+    const supabase = supabase.createClient(
       "https://hxzrhryiywtzmoryhqbg.supabase.co",
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4enJocnlpeXd0em1vcnlocWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5Mzg3OTAsImV4cCI6MjA2NTUxNDc5MH0.sq_u2Lq3_kjo0TzVGUINmv97fYGJmLWCZnXzh0pHcHc"
     );
 
+    // 3. Giriş kontrolü
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         supabase.auth.signInWithOAuth({ provider: 'github' });
       }
     });
 
+    // 4. Mining Fonksiyonu
     async function startMining() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -39,11 +42,13 @@
 
       if (error) {
         document.getElementById("status").innerText = "❌ Hata: " + error.message;
+        console.error(error);
       } else {
         document.getElementById("status").innerText = "✅ Tebrikler! 25 NGOLD kazandınız.";
       }
     }
 
+    // 5. Butona Tıklama Event'i
     document.getElementById("miningButton").addEventListener("click", startMining);
   </script>
 </body>
