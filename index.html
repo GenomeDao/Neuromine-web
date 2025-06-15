@@ -53,24 +53,28 @@
         }
       }
 
-      async function loadDashboard() {
-        const { data, error } = await supabase
-          .from("Mining_Result")
-          .select("*")
-          .eq("user_id", currentUserId);
+      async function loadDashboard(userId) {
+  const { data, error } = await supabase
+    .from("Mining_Result")
+    .select("*")
+    .eq("user_id", userId);
 
-        if (error) {
-          document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
-          console.error(error);
-          return;
-        }
+  if (error) {
+    document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
+    console.error(error);
+    return;
+  }
 
-      	const totalEarned = data.reduce((sum, row) => sum + parseInt(row.earned_ngold || 0), 0);
-	const totalMined = data.length;
+  console.log("Dashboard için veri:", data); // 🔥 BU SATIRI EKLE 🔍
 
-      	document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
-	document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
-	document.getElementById("dashboard").style.display = "block";
+  const totalEarned = data.reduce((sum, row) => sum + (row.earned_ngold || 0), 0);
+  const totalMined = data.length;
+
+  document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
+  document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
+  document.getElementById("dashboard").style.display = "block";
+}
+
 
       }
 
