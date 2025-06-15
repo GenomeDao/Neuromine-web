@@ -40,14 +40,15 @@
   }
 
   // BUGÜN ZATEN MİNING YAPILMIŞ MI?
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // sadece tarih kısmını al
+  const todayStart = new Date();
+todayStart.setUTCHours(0, 0, 0, 0); // UTC başlangıç
 
-  const { data: existing, error: checkError } = await supabase
-    .from("Mining_Result")
-    .select("*")
-    .eq("user_id", user.id)
-    .gte("created_at", today.toISOString());
+const { data: existing, error: checkError } = await supabase
+  .from("Mining_Result")
+  .select("*")
+  .eq("user_id", user.id)
+  .gte("created_at", todayStart.toISOString());
+
 
   if (checkError) {
     document.getElementById("status").innerText = "⚠️ Kontrol sırasında hata oluştu.";
