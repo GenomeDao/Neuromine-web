@@ -1,16 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
   <head>
     <meta charset="UTF-8" />
     <title>NeuroMine</title>
+
+    <!-- Supabase Kitaplığı -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      body {
+        text-align: center;
+        margin-top: 60px;
+        font-family: Arial;
+      }
+      #dashboard {
+        margin-top: 30px;
+        display: none;
+      }
+    </style>
   </head>
-  <body style="text-align: center; margin-top: 60px; font-family: Arial;">
+  <body>
     <h2>NeuroMine Web Mining</h2>
     <button id="miningButton">⛏ Mining’e Başla</button>
     <p id="status">Durum bekleniyor...</p>
 
-    <div id="dashboard" style="margin-top: 30px; display: none;">
+    <div id="dashboard">
       <h3>📊 Kazanç Paneli</h3>
       <p id="totalEarned">Toplam Kazanç: yükleniyor...</p>
       <p id="totalMined">Toplam Mining Sayısı: yükleniyor...</p>
@@ -22,63 +36,65 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4enJocnlpeXd0em1vcnlocWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5Mzg3OTAsImV4cCI6MjA2NTUxNDc5MH0.sq_u2Lq3_kjo0TzVGUINmv97fYGJmLWCZnXzh0pHcHc'
       );
 
-      let currentUserId = null;
+      // Oturum kontrolü ve yönlendirme
+      supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (error) {
+          console.error("Session alınırken hata:", error);
+          document.getElementById("status").innerText = "🔴 Bağlantı hatası!";
+          return;
+        }
 
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (!session) {
-          await supabase.auth.signInWithOAuth({ provider: 'github' });
+          supabase.auth.signInWithOAuth({ provider: 'github' });
         } else {
-          currentUserId = session.user.id; // ✅ uuid garantili
-          loadDashboard();
+          loadDashboard(session.user.id);
         }
       });
 
+      // Start Mining Fonksiyonu
       async function startMining() {
-        if (!currentUserId) {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
           document.getElementById("status").innerText = "⛔ Giriş yapılmadan mining yapılamaz.";
           return;
         }
 
         const { error } = await supabase.from("Mining_Result").insert({
-          user_id: currentUserId,
+          user_id: user.id,
           earned_ngold: 25,
-          platform: "web"
+          platform: "web",
+          created_at: new Date().toISOString() // zorunluysa
         });
 
         if (error) {
           document.getElementById("status").innerText = "❌ Hata: " + error.message;
         } else {
           document.getElementById("status").innerText = "✅ Tebrikler, 25 NGOLD kazandınız!";
-          loadDashboard(); // 🟢 Güncelle
+          loadDashboard(user.id); // Dashboard’u güncelle
         }
       }
 
-      async function loadDashboard(userId) {
-  const { data, error } = await supabase
-    .from("Mining_Result")
-    .select("*")
-    .eq("user_id", userId);
-
-  if (error) {
-    document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
-    console.error(error);
-    return;
-  }
-
-  console.log("Dashboard için veri:", data); // 🔥 BU SATIRI EKLE 🔍
-
-  const totalEarned = data.reduce((sum, row) => sum + (row.earned_ngold || 0), 0);
-  const totalMined = data.length;
-
-  document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
-  document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
-  document.getElementById("dashboard").style.display = "block";
-}
-
-
-      }
-
       document.getElementById("miningButton").addEventListener("click", startMining);
+
+      // Dashboard Yükleme Fonksiyonu
+      async function loadDashboard(userId) {
+        const { data, error } = await supabase
+          .from("Mining_Result")
+          .select("*")
+          .eq("user_id", userId);
+
+        if (error || !data) {
+          document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
+          return;
+        }
+
+        const totalEarned = data.reduce((sum, row) => sum + (row.earned_ngold || 0), 0);
+        const totalMined = data.length;
+
+        document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
+        document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
+        document.getElementById("dashboard").style.display = "block";
+      }
     </script>
   </body>
 </html>
