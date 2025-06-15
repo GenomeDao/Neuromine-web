@@ -3,33 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <title>NeuroMine Web Mining</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="font-family: Arial; text-align: center; margin-top: 50px;">
   <h2>NeuroMine Web Mining</h2>
   <button id="miningButton">⛏ Mining’e Başla</button>
   <p id="status">Durum bekleniyor...</p>
 
-  <!-- 1. Supabase JS Kütüphanesini yükle -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- 2. Supabase Client Ayarı -->
   <script>
+    // 1. Supabase Bağlantısı
     const supabase = supabase.createClient(
       "https://hxzrhryiywtzmoryhqbg.supabase.co",
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4enJocnlpeXd0em1vcnlocWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5Mzg3OTAsImV4cCI6MjA2NTUxNDc5MH0.sq_u2Lq3_kjo0TzVGUINmv97fYGJmLWCZnXzh0pHcHc"
     );
 
-    // 3. Giriş kontrolü
+    // 2. Sayfa açıldığında oturum yoksa GitHub girişine yönlendir
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        supabase.auth.signInWithOAuth({ provider: 'github' });
+        supabase.auth.signInWithOAuth({
+          provider: 'github',
+          options: {
+            redirectTo: window.location.href
+          }
+        });
       }
     });
 
-    // 4. Mining Fonksiyonu
+    // 3. Mining Başlatma
     async function startMining() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
         document.getElementById("status").innerText = "⛔ Giriş yapılmadan mining başlatılamaz.";
         return;
       }
@@ -42,13 +45,12 @@
 
       if (error) {
         document.getElementById("status").innerText = "❌ Hata: " + error.message;
-        console.error(error);
       } else {
         document.getElementById("status").innerText = "✅ Tebrikler! 25 NGOLD kazandınız.";
       }
     }
 
-    // 5. Butona Tıklama Event'i
+    // 4. Buton Etkileşimi
     document.getElementById("miningButton").addEventListener("click", startMining);
   </script>
 </body>
