@@ -77,24 +77,26 @@
       document.getElementById("miningButton").addEventListener("click", startMining);
 
       // Dashboard Yükleme Fonksiyonu
-      async function loadDashboard(userId) {
-        const { data, error } = await supabase
-          .from("Mining_Result")
-          .select("*")
-          .eq("user_id", userId);
+     async function loadDashboard(userId) {
+  const { data, error } = await supabase
+    .from("Mining_Result")
+    .select("*")
+    .eq("user_id", userId);
 
-        if (error || !data) {
-          document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
-          return;
-        }
+  if (error) {
+    document.getElementById("dashboard").innerHTML = "❌ Dashboard verisi alınamadı.";
+    console.error(error);
+    return;
+  }
 
-        const totalEarned = data.reduce((sum, row) => sum + (row.earned_ngold || 0), 0);
-        const totalMined = data.length;
+  const totalEarned = data.reduce((sum, row) => sum + Number(row.earned_ngold), 0); // 🔥 Fix burada
+  const totalMined = data.length;
 
-        document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
-        document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
-        document.getElementById("dashboard").style.display = "block";
-      }
+  document.getElementById("totalEarned").innerText = `Toplam Kazanç: ${totalEarned} NGOLD`;
+  document.getElementById("totalMined").innerText = `Toplam Mining Sayısı: ${totalMined}`;
+  document.getElementById("dashboard").style.display = "block";
+}
+
     </script>
   </body>
 </html>
